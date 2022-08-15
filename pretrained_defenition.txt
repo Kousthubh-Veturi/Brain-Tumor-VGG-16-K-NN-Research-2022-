@@ -1,0 +1,16 @@
+
+Input -> h*w*3
+Output -> h*w*64
+3x3 convolution kernel
+
+for loop, in order to generate output at u , v , c, input value is receptive field size
+
+input 3x3x3 -> 27 Values at the corresponding region in the input
+weight_array_c -> take input i, j , k and multiply it by kernel C i, j, k, and add those to the values for i, j, k, add a bias, 
+bias_c -> 1 bias per channel
+i, j, k, go from 0 to 2
+3 things stored in memory:
+
+weighted_array -> 4 dimensional (64, 3, 3, 3)
+bias_array -> length 64, 1 dimensional 
+program to run, the logic that implements this algorithm 
