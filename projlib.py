@@ -52,3 +52,23 @@ def generate_vgg_features():
             np.save(f"{dest}/{i:08d}.npy",features[0])
 
 
+
+
+def train_nearest_neighbor_classifier():
+    features = []
+    feature_dir = Path("artifacts/vgg_features/training/")
+    for path in feature_dir.iterdir():
+        features.append(np.load(path))
+    
+    features = np.array(features)
+    #need labels, how get labels
+    sample, x, y = np.shape(features)
+    shapedarray = np.reshape(features,(sample,x*y))
+
+    nnc = NearestNeighbors(n_neighbors=4)
+    nnc.fit(shapedarray)
+
+    dest = Path("artifacts/models/")
+    dest.mkdir(parents=True,exist_ok=True)
+    pickle.dump(nnc,open("artifacts/models/nearest_neighbor_classifier.pkl","wb"))
+    print("saved model")
