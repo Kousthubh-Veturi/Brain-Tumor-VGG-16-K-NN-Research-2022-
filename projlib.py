@@ -17,7 +17,8 @@ from keras.models import Model
 import numpy as np
 import sklearn
 from sklearn.neighbors import NearestNeighbors
-
+from sklearn.neighbors import KNeighborsClassifier
+import pickle as pkl
 def generate_vgg_features():
     '''
     before calling function, define following vars:
@@ -46,19 +47,17 @@ def generate_vgg_features():
 
 def train_nearest_neighbor_classifier():
     features = []
+    labels = []
     feature_dir = Path("artifacts/vgg_features/training/")
-    for path in feature_dir.iterdir():
-        features.append(np.load(path))
-    
-    features = np.array(features)
-    #need labels, how get labels
-    sample, x, y = np.shape(features)
-    shapedarray = np.reshape(features,(sample,x*y))
+    for i,class_dir in enumerate(sorted(feature_dir.iterdir())):
+         for file_path in class_dir.iterdir():
+            features.append(np.load(file_path))
+            labels.append(i)
 
-    nnc = NearestNeighbors(n_neighbors=4)
-    nnc.fit(shapedarray)
 
-    dest = Path("artifacts/models/")
-    dest.mkdir(parents=True,exist_ok=True)
-    pickle.dump(nnc,open("artifacts/models/nearest_neighbor_classifier.pkl","wb"))
-    print("saved model")
+    knc = KNeighborsClassifier(n_neighbors=4)
+    knc.fit(features,labels) 
+    dest = Path("artifacts/models/knc.pkl")
+    dest.parent.mkdir(parents=True,exist_ok=True)
+    dest.write_bytes(pkl.dumps(knc)) 
+    print("saved model") 
