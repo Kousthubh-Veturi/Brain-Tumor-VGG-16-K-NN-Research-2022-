@@ -55,9 +55,41 @@ def train_nearest_neighbor_classifier():
             labels.append(i)
 
 
-    knc = KNeighborsClassifier(n_neighbors=4)
+    knc = KNeighborsClassifier(n_neighbors=1)
     knc.fit(features,labels) 
     dest = Path("artifacts/models/knc.pkl")
     dest.parent.mkdir(parents=True,exist_ok=True)
     dest.write_bytes(pkl.dumps(knc)) 
     print("saved model") 
+
+def test_nearest_neighbor_classifier():
+    features = []
+    labels = []
+    feature_dir = Path("artifacts/vgg_features/testing/")
+    for i,class_dir in enumerate(sorted(feature_dir.iterdir())):
+         for file_path in class_dir.iterdir():
+            features.append(np.load(file_path))
+            labels.append(i)
+    labels = np.array(labels)
+    features = np.array(features)
+    model = pkl.load(open("artifacts/models/knc.pkl", 'rb'))
+    predictions = model.predict(features) 
+    '''
+    model = pkl.load(open("artifacts/models/knc.pkl", 'rb'))
+    for feature in features:
+        predfeature = np.reshape(feature, (1, 4096))
+        result = results.append(model.predict(predfeature))
+    '''
+    print(np.mean(labels!=predictions)*100 , "%")
+    pred_counts = np.zeros((4,4))
+    for label,prediction in zip(labels,predictions):
+        pred_counts[label,prediction]+=1
+
+    print(pred_counts)
+    pred_rates = (pred_counts/(np.sum(pred_counts,axis=1,keepdims=True)))
+    print(pred_rates)
+    
+        
+
+
+    
