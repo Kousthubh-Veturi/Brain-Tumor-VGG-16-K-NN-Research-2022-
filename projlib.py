@@ -11,25 +11,39 @@ from pathlib import Path
 import tensorflow as tf
 import keras
 from keras import models 
-from keras.applications.vgg16 import VGG16
-from keras.applications.vgg16 import preprocess_input
+from keras.applications import vgg16
+from keras.applications import resnet
 from keras.models import Model
 import numpy as np
 import sklearn
 from sklearn.neighbors import NearestNeighbors
 from sklearn.neighbors import KNeighborsClassifier
 import pickle as pkl
-def generate_vgg_features():
+import glob
+
+
+def generate_features(model_name:str,layer_name:str):
     '''
     before calling function, define following vars:
     environment variable to access directory for training data
     call environment variable: "MRI_DATA_PATH", points to the dataset
         
     '''
+    
+    if model_name == "VGG16":
+        model = vgg16.VGG16()
+        prep = vgg16.preprocess_input
+         
+    else:
+        model = resnet.ResNet50()
+        prep = resnet.preprocess_input
 
-    model = VGG16()
-    kept_layers = model.layers[:-1]
-    model = keras.Sequential(kept_layers)
+    kept_layers = []
+    for layer in model.layers:
+        kept_layers.append(layer)
+        if(layer.name==layer_name):
+            break
+    model = keras.Sequential(kept_layers) 
   
 
     for split_name in ["training","testing"]:
@@ -37,24 +51,36 @@ def generate_vgg_features():
         class_dirs = sorted(source.glob("[!.]*"))
         for class_dir in class_dirs:
             for file_path in class_dir.iterdir():
-                dest = Path("artifacts/vgg_features/",split_name,class_dir.name,file_path.stem).with_suffix(".npy") 
+                #dest = Path("artifacts/vgg_features/",split_name,class_dir.name,file_path.stem).with_suffix(".npy") 
+                dest = Path("artifacts/",model_name,layer_name,"features",split_name,class_dir.name,file_path.stem).with_suffix(".npy")  
                 image = tf.keras.preprocessing.image.load_img(file_path,target_size=(224,224))
-                input_arr = preprocess_input(tf.keras.preprocessing.image.img_to_array(image))[np.newaxis,...]
-                features = model.predict(input_arr,verbose=0)[0]
+                input_arr = prep(tf.keras.preprocessing.image.img_to_array(image))[np.newaxis,...]
+                features = model.predict(input_arr,verbose=0)[0] 
+                if features.ndim == 3:
+                    height = features.shape[0]
+                    width = features.shape[1]
+                    features = features[height//2,width//2] 
                 dest.parent.mkdir(parents=True,exist_ok=True)
                 np.save(dest,features)
  
 
-def train_nearest_neighbor_classifier():
+def train_nearest_neighbor_classifier(model_name:str,layer_name:str): 
     features = []
     labels = []
-    feature_dir = Path("artifacts/vgg_features/training/")
-    for i,class_dir in enumerate(sorted(feature_dir.iterdir())):
-         for file_path in class_dir.iterdir():
+    source = Path("artifacts/"+model_name+"/"+layer_name+"/features/training")
+    
+    class_dirs = sorted(source.glob("[!.]*"))
+   
+    for i,class_dir in enumerate(sorted(source.glob("[!.]*"))):
+
+        for file_path in class_dir.glob("[!.]*"):
             features.append(np.load(file_path))
             labels.append(i)
-
-
+                
+ 
+    
+    features = np.array(features)
+    labels = np.array(labels)
     knc = KNeighborsClassifier(n_neighbors=1)
     knc.fit(features,labels) 
     dest = Path("artifacts/models/knc.pkl")
@@ -62,25 +88,24 @@ def train_nearest_neighbor_classifier():
     dest.write_bytes(pkl.dumps(knc)) 
     print("saved model") 
 
-def test_nearest_neighbor_classifier():
+def test_nearest_neighbor_classifier(model_name:str,layer_name:str):
     features = []
     labels = []
-    feature_dir = Path("artifacts/vgg_features/testing/")
-    for i,class_dir in enumerate(sorted(feature_dir.iterdir())):
-         for file_path in class_dir.iterdir():
+    source = Path("artifacts/"+model_name+"/"+layer_name+"/features/testing")
+
+    class_dirs = sorted(source.glob("[!.]*"))
+    for i,class_dir in enumerate(sorted(source.glob("[!.]*"))):
+
+        for file_path in class_dir.glob("[!.]*"):
             features.append(np.load(file_path))
             labels.append(i)
+     
     labels = np.array(labels)
     features = np.array(features)
     model = pkl.load(open("artifacts/models/knc.pkl", 'rb'))
     predictions = model.predict(features) 
-    '''
-    model = pkl.load(open("artifacts/models/knc.pkl", 'rb'))
-    for feature in features:
-        predfeature = np.reshape(feature, (1, 4096))
-        result = results.append(model.predict(predfeature))
-    '''
-    print(np.mean(labels!=predictions)*100 , "%")
+
+    print(np.mean(labels==predictions)*100 , "%")
     pred_counts = np.zeros((4,4))
     for label,prediction in zip(labels,predictions):
         pred_counts[label,prediction]+=1
