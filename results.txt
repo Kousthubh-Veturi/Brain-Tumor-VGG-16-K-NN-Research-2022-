@@ -1,0 +1,17 @@
+flatten layer + VGG16
+
+    KNeighborsClassifier(n_neighbors=1),#94.73684210526315
+    SVC(kernel="linear", C=0.025),#86.80396643783371
+    SVC(gamma=2, C=1),#39.20671243325706
+    GaussianProcessClassifier(),#39.74065598779558
+    DecisionTreeClassifier(max_depth=5),#62.852784134248665
+    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),#57.58962623951183
+    MLPClassifier(alpha=1, max_iter=1000),#92.60106788710908
+    AdaBoostClassifier(),#68.49733028222731
+    GaussianNB(),#69.94660564454614
+    QuadraticDiscriminantAnalysis(),#83.7528604118993
+    MLPClassifier(alpha=0.1,max_iter=1000),#92.06712433257056 
+
+-
+
+block1_conv1 + vgg16:
