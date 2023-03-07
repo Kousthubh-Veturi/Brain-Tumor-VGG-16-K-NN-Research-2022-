@@ -28,6 +28,10 @@ from typing import Any
 import copy
 from copy import deepcopy
 import matplotlib.pyplot as plt
+def make_model_cnn():
+    model = models.Sequential()
+
+    ...
 def generate_features(model_name:str,layer_name:str):
     '''
     before calling function, define following vars:
@@ -127,7 +131,7 @@ def test_classifier(model_name:str,layer_name:str,classifier:Any):
 
 
     print(np.mean(labels==predictions)*100 , "%")
-    pred_counts = np.zeros((4,4))
+    pred_counts = np.zeros((3,3))
     for label,prediction in zip(labels,predictions):
         pred_counts[label,prediction]+=1
 
